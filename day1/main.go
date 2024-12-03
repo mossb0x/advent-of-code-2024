@@ -18,7 +18,7 @@ func separateLists(fileName string) ([]int, []int) {
 	}
 
 	rawLists := string(f)
-	// turns it into an array with the format XXXXX XXXXX for each element value as string
+	// turns it into an array with the format XXXXX XXXXX for each element element as string
 	lessRawLists := strings.Split(rawLists, "\n")
 	var separatedList1, separatedList2 []int
 	// iterates over each element
@@ -56,20 +56,41 @@ func listDistance(list1 []int, list2 []int) int {
 
 	var distanceList []int
 
-	for i, value1 := range list1 {
-		value2 := list2[i]
+	for i, element_1 := range list1 {
+		element_2 := list2[i]
 		// i hate how this looks :/
-		distanceList = append(distanceList, int(math.Abs(float64(value1-value2))))
+		distanceList = append(distanceList, int(math.Abs(float64(element_1-element_2))))
 	}
 
-	for _, value := range distanceList {
-		distance += value
+	for _, element := range distanceList {
+		distance += element
 	}
 
 	return distance
 }
 
+func count(value int, slice []int) int {
+	count := 0
+	for _, element := range slice {
+		if value == element {
+			count++
+		}
+	}
+	return count
+}
+
+func listSimilarity(list1 []int, list2 []int) int {
+	var similarity int = 0
+
+	for _, element_1 := range list1 {
+		similarity += element_1 * count(element_1, list2)
+	}
+
+	return similarity
+}
+
 func main() {
 	list1, list2 := separateLists("input.txt")
 	fmt.Println(listDistance(list1, list2))
+	fmt.Println(listSimilarity(list1, list2))
 }

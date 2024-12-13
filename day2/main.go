@@ -2,91 +2,122 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
-	"log"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 )
 
-func stringsToIntegers(lines []string) ([]int, error) {
-	integers := make([]int, 0, len(lines))
-	for _, line := range lines {
-		n, err := strconv.Atoi(line)
-		if err != nil {
-			return nil, err
-		}
-		integers = append(integers, n)
-	}
-	return integers, nil
-}
-
-func isSortedDesc(slice []int) bool {
-	var unsafe int
-	for i := 0; i < len(slice)-1; i++ {
-		// WHY IS THIS RIGHT???? WHY DID THIS POP OUT A CORRECT RESULT???
-		// difference shouldn't be larger than 2
-		// moving on
-		if slice[i] <= slice[i+1] || slice[i]-slice[i+1] > 3 {
-			unsafe++
-			if unsafe > 1 {
-				return false
-			}
-		}
-	}
-	return true
-}
-
-func isSortedAsc(slice []int) bool {
-	var unsafe int
-	for i := 0; i < len(slice)-1; i++ {
-		if slice[i] >= slice[i+1] || slice[i+1]-slice[i] > 3 {
-			unsafe++
-			if unsafe > 1 {
-				return false
-			}
-		}
-	}
-	return true
-}
-
-func reportsArray(fileName string) ([]string, error) {
-	file, err := os.ReadFile(fileName)
+func getInput(filename string) ([][]int, error) {
+	f, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
 
-	var reports []string
+	var reports [][]int
 
-	// just learned abt scanners
-	scanner := bufio.NewScanner(bytes.NewReader(file))
+	scanner := bufio.NewScanner(strings.NewReader(string(f)))
 	for scanner.Scan() {
-		reports = append(reports, scanner.Text())
+		row := []int{}
+		for _, value := range strings.Fields(scanner.Text()) {
+			temp, err := strconv.Atoi(value)
+			if err != nil {
+				return nil, err
+			}
+			row = append(row, temp)
+		}
+		reports = append(reports, row)
 	}
 
 	return reports, nil
 }
 
-func countSafeReports(reports []string) int {
-	var safeReports int = 0
-	for i := range reports {
-		temp, err := stringsToIntegers(strings.Fields(reports[i]))
-		if err != nil {
-			log.Fatal(err)
+func abs(num int) int {
+	if num < 0 {
+		return -num
+	}
+	return num
+}
+
+func isSafe(report []int) bool {
+	if report[0] < report[1] {
+		for i := 0; i < len(report)-1; i++ {
+			if report[i+1]-report[i] > 3 || report[i+1]-report[i] < 1 || report[i+1]-report[i] < 0 {
+				return false
+			}
 		}
-		if isSortedAsc(temp) || isSortedDesc(temp) {
-			safeReports++
+	} else {
+		for i := 0; i < len(report)-1; i++ {
+			if report[i]-report[i+1] > 3 || report[i]-report[i+1] < 1 || report[i]-report[i+1] < 0 {
+				return false
+			}
 		}
 	}
+	return true
+}
 
+// The issue here is its not checking if the array is valid without the first number
+// FIXME: check if the first number invalidates a report
+
+func isSafeDampener(report []int) bool {
+	if report[0] == report[1] {
+		return isSafe(slices.Delete(report, 1, 2))
+	}
+
+	if report[0] < report[1] {
+		for i := 0; i < len(report)-1; i++ {
+			if report[i+1]-report[i] > 3 || report[i+1]-report[i] < 1 || report[i+1]-report[i] < 0 {
+				return isSafe(slices.Delete(report, i+1, i+2))
+			}
+		}
+	} else {
+		for i := 0; i < len(report)-1; i++ {
+			if report[i]-report[i+1] > 3 || report[i]-report[i+1] < 1 || report[i]-report[i+1] < 0 {
+				return isSafe(slices.Delete(report, i+1, i+2))
+			}
+		}
+	}
+	return true
+}
+
+func countSafeReports(reports [][]int, dampener bool) int {
+	safeReports := 0
+	if dampener {
+		for _, row := range reports {
+			if isSafeDampener(row) {
+				safeReports++
+			}
+		}
+	} else {
+		for _, row := range reports {
+			if isSafe(row) {
+				safeReports++
+			}
+		}
+	}
 	return safeReports
 }
 
 func main() {
-	reports, err := reportsArray("./input.txt")
+	reports, err := getInput("./day2/input.txt")
 	if err != nil {
 		return
 	}
-	fmt.Println(countSafeReports(reports))
+
+	// reports_test := [][]int{
+	// 	{7, 6, 4, 2, 1},
+	// 	{1, 2, 7, 8, 9},
+	// 	{9, 7, 6, 2, 1},
+	// 	{1, 3, 2, 4, 5},
+	// 	{8, 6, 4, 4, 1},
+	// 	{1, 3, 6, 7, 9},
+	// }
+	//
+	// fmt.Println(countSafeReports(reports, false))
+	// fmt.Println(reports)
+	fmt.Println("Without dampener")
+	fmt.Println(countSafeReports(reports, false))
+	fmt.Println("With dampener")
+	fmt.Println(countSafeReports(reports, true))
 }
